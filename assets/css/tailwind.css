@@ -1,0 +1,31 @@
+@layer tailwind-base, primevue, tailwind-utilities;
+
+@layer tailwind-base {
+    @tailwind base;
+    html {
+        font-size: theme("fontSize.base"); /* Uses the 'base' value */
+    }
+
+    .p-datatable * {
+        font-size: 12px;
+    }
+}
+
+@layer tailwind-utilities {
+    @tailwind components;
+    @tailwind utilities;
+}
+
+* {
+    font-family: "Inter", sans-serif;
+}
+
+body {
+    overflow: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
+}
