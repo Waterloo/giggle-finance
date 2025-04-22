@@ -130,7 +130,10 @@ async function releaseToWallet() {
             </div>
         </div> -->
 
-        <AttendanceSheetList @selectionChange="handleReleaseToWallet" />
+        <AttendanceSheetList
+            @selectionChange="handleReleaseToWallet"
+            :attendance-sheet="jobAttendanceData?.attendanceSheet"
+        />
         <div
             v-if="selectedRows?.length > 0"
             class="my-10 flex justify-center items-center"

@@ -78,42 +78,7 @@ const tempIssues = ref<string[]>([]);
 const props = defineProps({
     attendanceSheet: {
         type: Array<AttendanceRecord>,
-        default: () => [
-            {
-                id: 1,
-                applicantId: 101,
-                name: "Ioni Bowcher (F)",
-                profilePic: "https://example.com/profiles/ion.jpg",
-                nric: "S1234G452",
-                paymentStatus: "pending",
-                basePay: "17",
-                signInTime: "2023-05-15T08:00:00Z",
-                signOutTime: "2023-05-15T14:00:00Z",
-                breakTime: "1.30",
-                totalHourWorked: 4.5,
-                totalPay: "100",
-                penaltyAmount: "50",
-                netPay: "150",
-                issue: ["late", "wrong_attire"],
-            },
-            {
-                id: 2,
-                applicantId: 102,
-                name: "Aiden Elsner (M)",
-                profilePic: "https://example.com/profiles/aiden.jpg",
-                nric: "S1234T758",
-                paymentStatus: "paid",
-                basePay: "18",
-                signInTime: "2023-05-15T08:00:00Z",
-                signOutTime: "2023-05-15T14:00:00Z",
-                breakTime: "0.30",
-                totalHourWorked: 4.5,
-                totalPay: "108",
-                penaltyAmount: "0",
-                netPay: "108",
-                issue: [],
-            },
-        ],
+        default: () => [],
     },
 });
 
