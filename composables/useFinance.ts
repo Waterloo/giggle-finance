@@ -207,3 +207,217 @@ export function useWalletReleaseHistory(
     refetch,
   };
 }
+
+// Interface for the payload of the POST /finance/wallet-release request
+interface ReleaseWalletPayload {
+  release: number[]; // Array of request IDs to be released
+}
+
+// Interface for the expected 'result' object in the success response (empty based on schema)
+interface ReleaseWalletResult {} // Empty object as per schema: "result": { "type": "object", "properties": {} }
+
+// --- NEW COMPOSABLE ---
+
+/**
+ * Composable for releasing wallet funds via POST /finance/wallet-release.
+ * Handles the API call to approve and process wallet release requests.
+ */
+export function useReleaseWallet() {
+  const { API } = useAuth(); // Get the authenticated API instance
+
+  // Setup the mutation using useMutation from @pinia/colada
+  const {
+    mutate, // Function to trigger the API call (mutation)
+    status, // Reactive status: 'idle' | 'pending' | 'success' | 'error'
+    isLoading, // Computed boolean: true if status is 'pending'
+    error, // Holds the error object if the mutation fails
+  } = useMutation<
+    ReleaseWalletResult, // Expected type of the data returned on success (result field)
+    Error, // Type of error expected on failure
+    ReleaseWalletPayload // Type of the payload passed to the mutate function
+  >({
+    // Optional: A unique key for this mutation, useful for devtools and potentially cache invalidation
+    key: ["finance", "wallet-release", "release"],
+
+    // The core mutation function that performs the API request
+    mutation: async (payload: ReleaseWalletPayload) => {
+      // Make the POST request to the endpoint
+      const response = await API<APIResponse<ReleaseWalletResult>>(
+        `/finance/wallet-release`, // The API endpoint URL
+        {
+          method: "POST",
+          body: JSON.stringify({
+            release: payload,
+          }), // The payload { release: [id1, id2, ...] }
+        },
+      );
+
+      // On success, return the 'result' part of the API response.
+      // Based on the provided schema, this is expected to be an empty object {}.
+      return response.result;
+    },
+
+    // Optional callbacks for success/error handling within the composable
+    // onSuccess: (data) => { console.log('Wallet release successful:', data); },
+    // onError: (err) => { console.error('Wallet release failed:', err); },
+  });
+
+  // Expose the mutation function and its state variables
+  return {
+    releaseFunds: mutate, // Provide the function to trigger the release
+    releaseStatus: status, // Expose the current status of the mutation
+    isReleasing: isLoading, // Convenience boolean for loading state
+    releaseError: error, // Expose any error that occurred
+  };
+}
+interface JobAttendanceSheetItem {
+  id: number;
+  applicantId: number;
+  name: string;
+  profilePic: string; // URL
+  nric: string;
+  paymentStatus: "pending" | "paid" | string; // Add other potential statuses if known
+  basePay: string;
+  signInTime: string | null; // Assuming time can be null
+  signOutTime: string | null; // Assuming time can be null
+  breakTime: string; // e.g., "0.15"
+  totalHourWorked: number;
+  totalPay: string;
+  penaltyAmount: string;
+  netPay: string;
+  issue: string[];
+}
+
+interface JobSignature {
+  status: "pending" | "signed" | string; // Add other potential statuses if known
+  signatureURL: string | null; // URL or null if not signed/available
+}
+
+interface JobAttendanceResult {
+  attendanceSheet: JobAttendanceSheetItem[];
+  signature: JobSignature;
+}
+export function useJobAttendanceSheet(jobId: Ref<string | number | undefined>) {
+  const { API } = useAuth();
+
+  // Define default data structure for initial state or when disabled
+  const defaultJobAttendance: JobAttendanceResult = {
+    attendanceSheet: [],
+    signature: { status: "pending", signatureURL: null },
+  };
+
+  const {
+    data: jobAttendanceData,
+    isLoading,
+    error,
+    refresh,
+    refetch,
+  } = useQuery<JobAttendanceResult>({
+    key: () => ["finance", "job", "attendance", jobId.value], // Query key includes job ID
+    query: async (): Promise<JobAttendanceResult> => {
+      // Should not run if jobId is undefined due to 'enabled' config, but good practice
+      console.log("Fetching attendance for job", jobId.value);
+      if (!jobId.value) {
+        return defaultJobAttendance;
+      }
+
+      try {
+        // Construct the URL with the job ID
+        const response = await API<APIResponse<JobAttendanceResult>>(
+          `/finance/job/${jobId.value}`, // Use jobId in the path
+          // No query parameters needed based on the spec
+        );
+        // Return the 'result' field which matches JobAttendanceResult
+        return response.result ?? defaultJobAttendance;
+      } catch (err) {
+        console.error(`Error fetching attendance for job ${jobId.value}:`, err);
+        throw err; // Propagate error to useQuery
+      }
+    },
+    // Only enable the query if jobId has a value
+    enabled: () => Boolean(jobId.value),
+    refetchOnWindowFocus: false,
+  });
+
+  // Optionally expose parts of the data directly
+  const attendanceSheet = computed(
+    () => jobAttendanceData.value?.attendanceSheet ?? [],
+  );
+  const signature = computed(
+    () => jobAttendanceData.value?.signature ?? defaultJobAttendance.signature,
+  );
+
+  return {
+    jobAttendanceData, // The full result object { attendanceSheet, signature }
+    attendanceSheet, // Computed ref to the sheet array
+    signature, // Computed ref to the signature object
+    isLoading,
+    error,
+    refresh,
+    refetch,
+  };
+}
+
+interface ReleaseToWalletEnrollment {
+  id: number; // Enrollment ID or Applicant ID? Based on context, likely enrollment ID
+  signInTime: string | null; // Allow null or empty string based on API flexibility
+  signOutTime: string | null; // Allow null or empty string
+  breakTime: string; // e.g., "0.15"
+  issue: string[]; // Array of issue identifiers, e.g., ["wrong_attire"]
+}
+
+interface ReleaseToWalletPayload {
+  jobId: number;
+  enrollments: ReleaseToWalletEnrollment[];
+}
+
+interface ReleaseToWalletResult {}
+
+// --- NEW COMPOSABLE for POST /finance/release-to-wallet ---
+
+/**
+ * Composable for submitting job attendance data for wallet release.
+ * Handles the POST request to /finance/release-to-wallet.
+ */
+export function useReleaseToWallet() {
+  const { API } = useAuth();
+
+  const {
+    mutate, // Function to trigger the mutation
+    status, // 'idle' | 'pending' | 'success' | 'error'
+    isLoading, // true when 'pending'
+    error, // Error object on failure
+    // data, // Optional: Holds the success response data (ReleaseToWalletResult)
+  } = useMutation<
+    ReleaseToWalletResult, // Type of successful result data
+    Error, // Type of error
+    ReleaseToWalletPayload // Type of the payload for the mutate function
+  >({
+    // Optional mutation key for devtools/caching
+    key: ["finance", "release-to-wallet"],
+
+    mutation: async (payload: ReleaseToWalletPayload) => {
+      // Perform the POST request
+      const response = await API<APIResponse<ReleaseToWalletResult>>(
+        `/finance/release-to-wallet`, // API endpoint
+        {
+          method: "POST",
+          body: payload, // Send the payload directly as the body
+        },
+      );
+      // Return the 'result' field from the API response upon success
+      return response.result;
+    },
+    // Optional: Add onSuccess/onError handlers here if needed
+    // onSuccess: (result) => { console.log("Release to wallet successful:", result); },
+    // onError: (err) => { console.error("Release to wallet failed:", err); },
+  });
+
+  // Expose the mutation function and its state
+  return {
+    submitReleaseToWallet: mutate, // Expose the function to trigger the submission
+    submitStatus: status, // Provide the reactive status
+    isSubmitting: isLoading, // Convenience boolean for loading state
+    submitError: error, // Expose potential errors
+  };
+}
