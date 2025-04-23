@@ -4,7 +4,7 @@ const { title } = usePageHeader();
 const { error, refetch, walletReleaseData, isLoading } = useWalletRelease();
 const startDate = ref(new Date().toISOString().split("T")[0]);
 const endDate = ref(new Date().toISOString().split("T")[0]);
-
+const loading = ref(true);
 const {
     error: historyError,
     refetch: refetchHistory,
@@ -13,13 +13,16 @@ const {
 } = useWalletReleaseHistory(startDate, endDate);
 onMounted(() => {
     title.value = "Wallet";
+    loading.value = false;
 });
 function switchAttendanceType({ index }: { index: number }) {
+    loading.value = true;
     if (index === 0) {
         refetch();
     } else if (index === 1) {
         refetchHistory();
     }
+    loading.value = false;
 }
 const selectedApplicants = ref([]);
 function handleReleaseSelection(applicants: []) {
@@ -68,41 +71,50 @@ async function handleReleaseFund() {
 
 <template>
     <div v-auto-animate>
-        <TabView @tab-change="switchAttendanceType" class="transparent-tabview">
-            <TabPanel
-                ><template #header>
-                    <span class="inline-block px-2 pi pi-dollar" />
-                    Release Requests</template
-                >
-                <div>
-                    <WalletReleaseList
-                        :applicants="walletReleaseData"
-                        @release-fund="handleReleaseSelection"
-                    />
-                </div>
-                <div
-                    v-if="selectedApplicants.length > 0"
-                    class="mt-10 flex justify-center items-center"
-                >
-                    <Button @click="handleReleaseFund">Release Fund</Button>
-                </div>
-            </TabPanel>
-            <TabPanel
-                ><template #header>
-                    <span class="inline-block px-2 pi pi-folder" />Release
-                    Reports</template
-                >
-                <div>
-                    <WalletOverviewCards
-                        class="my-10"
-                        :stats="walletReleaseHistoryResult"
-                    />
-                    <WalletTransferList
-                        :transfers="walletReleaseHistoryResult?.transfers"
-                    />
-                </div>
-            </TabPanel>
-        </TabView>
+        <div v-if="loading">
+            <Skeleton width="100%" height="1.5rem" />
+            <Skeleton width="100%" height="5rem" />
+        </div>
+        <div v-else>
+            <TabView
+                @tab-change="switchAttendanceType"
+                class="transparent-tabview"
+            >
+                <TabPanel
+                    ><template #header>
+                        <span class="inline-block px-2 pi pi-dollar" />
+                        Release Requests</template
+                    >
+                    <div>
+                        <WalletReleaseList
+                            :applicants="walletReleaseData"
+                            @release-fund="handleReleaseSelection"
+                        />
+                    </div>
+                    <div
+                        v-if="selectedApplicants.length > 0"
+                        class="mt-10 flex justify-center items-center"
+                    >
+                        <Button @click="handleReleaseFund">Release Fund</Button>
+                    </div>
+                </TabPanel>
+                <TabPanel
+                    ><template #header>
+                        <span class="inline-block px-2 pi pi-folder" />Release
+                        Reports</template
+                    >
+                    <div>
+                        <WalletOverviewCards
+                            class="my-10"
+                            :stats="walletReleaseHistoryResult"
+                        />
+                        <WalletTransferList
+                            :transfers="walletReleaseHistoryResult?.transfers"
+                        />
+                    </div>
+                </TabPanel>
+            </TabView>
+        </div>
     </div>
 </template>
 <style scoped>
