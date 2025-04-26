@@ -7,21 +7,19 @@ const { title, subtitle, back } = usePageHeader();
 
 const { notificationVisibility, toggleNotificationVisibility } =
     useNotificationsBar();
+const { notificationsData, isLoading: isLoadingNotifications } =
+    useOutletNotifications(); // Fetch notifications
 
-const notifications: INotificationProps[] = [
-    // {
-    //   notificationId: "1234",
-    //   icon: "/_nuxt/assets/images/Avatar.png",
-    //   title: "I am a new notification",
-    //   message: "Lorem",
-    // },
-    // {
-    //   notificationId: "1224",
-    //   icon: "/_nuxt/assets/images/Avatar.png",
-    //   title: "I am a new notification",
-    //   message: "Lorem",
-    // },
-];
+const formattedNotifications = computed((): INotificationProps[] => {
+    return (notificationsData.value ?? []).map((item) => ({
+        notificationId: String(item.id), // Ensure string ID if needed by component
+        // Use a default icon or logic based on item.type/subType if available
+        icon: item.icon || "pi pi-bell", // Replace with your default icon path
+        title: item.subType || item.type || "Notification", // Use subType, type, or a default title
+        message: item.message,
+        // Add other properties if INotificationProps requires them from item.context
+    }));
+});
 
 const items = ref([
     {
@@ -135,13 +133,16 @@ const { hotels, filteredOutlets } = storeToRefs(outletStore);
                 </div>
                 <div v-auto-animate class="relative h-10">
                     <span
-                        class="pi pi-bell"
-                        @click="toggleNotificationVisibility"
-                    />
+                        v-if="formattedNotifications.length > 0"
+                        class="pi pi-bell absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2"
+                    >
+                        {{ formattedNotifications.length }}
+                    </span>
                     <NotificationContainer
                         v-if="notificationVisibility"
                         class="absolute z-50 px-4 bg-white shadow-md select-none right-2 min-w-96"
-                        :items="notifications"
+                        :items="formattedNotifications"
+                        :is-loading="isLoadingNotifications"
                     />
                 </div>
             </div>

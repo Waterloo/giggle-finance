@@ -12,11 +12,18 @@ const { jobAttendanceData, isLoading, error, refetch } =
 onMounted(() => {
     title.value = "Attendance Sheet";
     back.value = "/attendance-sheet";
-    if (jobAttendanceData.value) {
-        subtitle.value = ``;
-    }
+
     loading.value = false;
 });
+
+watch(jobAttendanceData, () => {
+    if (jobAttendanceData.value) {
+        console.log(jobAttendanceData.value);
+        title.value = formatToDMYDay(jobAttendanceData.value.jobDetails.date);
+        subtitle.value = `${formatTo12hTime(jobAttendanceData.value.jobDetails.startTime)} - ${formatTo12hTime(jobAttendanceData.value.jobDetails.endTime)}`;
+    }
+});
+
 const signatureOptions = {
     minWidth: 1.8,
     maxWidth: 2.2,
